@@ -117,6 +117,7 @@ Yêu cầu: máy đã cài [Docker]([https://nodejs.org/en](https://docs.docker.
 1. Clone hoặc tải project về máy.
 2. Đổi tên file `.env.example` thành `.env.local`.
 3. Mở file `.env.local` và điền các giá trị đã lưu ở **bước 1**.
+4. Copy `.env.local` và paste thành `.env`
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
