@@ -218,7 +218,7 @@ BEGIN
   VALUES (
     new.id, 
     CASE WHEN is_first_user THEN 'admin'::public.user_role_enum ELSE 'member'::public.user_role_enum END,
-    true
+    false -- Default to inactive;
   );
 
   UPDATE public.profiles 
