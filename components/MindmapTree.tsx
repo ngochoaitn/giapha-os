@@ -70,11 +70,22 @@ const getTreeData = (personId: string, ctx: MindmapContextData) => {
 
   const childrenList = (
     childRels.map((r) => personsMap.get(r.person_b)).filter(Boolean) as Person[]
-  ).filter((c) => {
-    if (hideMales && c.gender === "male") return false;
-    if (hideFemales && c.gender === "female") return false;
-    return true;
-  });
+  )
+    .filter((c) => {
+      if (hideMales && c.gender === "male") return false;
+      if (hideFemales && c.gender === "female") return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // 1. birth_order ascending (null → pushed to end)
+      const aOrder = a.birth_order ?? Infinity;
+      const bOrder = b.birth_order ?? Infinity;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      // 2. birth_year ascending (null → pushed to end)
+      const aYear = a.birth_year ?? Infinity;
+      const bYear = b.birth_year ?? Infinity;
+      return aYear - bYear;
+    });
 
   return {
     person: personsMap.get(personId)!,
