@@ -6,6 +6,21 @@ Dự án ra đời từ nhu cầu thực tế: cần một hệ thống Cloud đ
 
 Phù hợp với người Việt Nam.
 
+## Mục lục
+
+- [Các tính năng chính](#các-tính-năng-chính)
+- [Demo](#demo)
+- [Hình ảnh Giao diện](#hình-ảnh-giao-diện)
+- [Cài đặt và Chạy dự án](#cài-đặt-và-chạy-dự-án)
+  - [Cách 1: Deploy nhanh lên Vercel](#cách-1-deploy-nhanh-lên-vercel)
+  - [Cách 2: Chạy trên máy cá nhân](#cách-2-chạy-trên-máy-cá-nhân)
+- [Tài khoản đầu tiên](#tài-khoản-đầu-tiên)
+- [Xử lý lỗi khi đăng ký](#xử-lý-lỗi-khi-đăng-ký)
+- [Phân quyền người dùng (User Roles)](#phân-quyền-người-dùng-user-roles)
+- [Đóng góp (Contributing)](#đóng-góp-contributing)
+- [Tuyên bố từ chối trách nhiệm & Quyền riêng tư](#tuyên-bố-từ-chối-trách-nhiệm--quyền-riêng-tư)
+- [Giấy phép (License)](#giấy-phép-license)
+
 ## Các tính năng chính
 
 - **Sơ đồ trực quan**: Xem gia phả dạng Cây (Tree) và Sơ đồ tư duy (Mindmap).
@@ -25,6 +40,8 @@ Phù hợp với người Việt Nam.
 
 ## Hình ảnh Giao diện
 
+![Dashboard](docs/screenshots/dashboard.png)
+
 ![Danh sách](docs/screenshots/list.png)
 
 ![Sơ đồ cây](docs/screenshots/tree.png)
@@ -36,6 +53,8 @@ Phù hợp với người Việt Nam.
 ![Mindmap](docs/screenshots/kinship.png)
 
 ![Mindmap](docs/screenshots/events.png)
+
+More screenshots: [docs/screenshots/](docs/screenshots/)
 
 ## Cài đặt và Chạy dự án
 
