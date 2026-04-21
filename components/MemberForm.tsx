@@ -15,6 +15,7 @@ import {
   Trash2,
   User,
 } from "lucide-react";
+import { Lunar, Solar } from "lunar-javascript";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -64,6 +65,16 @@ export default function MemberForm({
     initialData?.death_day || "",
   );
 
+  const [deathLunarYear, setDeathLunarYear] = useState<number | "">(
+    initialData?.death_lunar_year || "",
+  );
+  const [deathLunarMonth, setDeathLunarMonth] = useState<number | "">(
+    initialData?.death_lunar_month || "",
+  );
+  const [deathLunarDay, setDeathLunarDay] = useState<number | "">(
+    initialData?.death_lunar_day || "",
+  );
+
   const [isDeceased, setIsDeceased] = useState<boolean>(
     initialData?.is_deceased || false,
   );
@@ -73,6 +84,9 @@ export default function MemberForm({
 
   const [birthOrder, setBirthOrder] = useState<number | "">(
     initialData?.birth_order || "",
+  );
+  const [generation, setGeneration] = useState<number | "">(
+    initialData?.generation || "",
   );
 
   const [avatarUrl, setAvatarUrl] = useState(initialData?.avatar_url || "");
@@ -85,12 +99,92 @@ export default function MemberForm({
 
   // Private fields
   const [phoneNumber, setPhoneNumber] = useState(
-    initialData?.phone_number || "",
+    initialData?.phone_number ?? "",
   );
-  const [occupation, setOccupation] = useState(initialData?.occupation || "");
+  const [occupation, setOccupation] = useState(
+    initialData?.occupation ?? "",
+  );
   const [currentResidence, setCurrentResidence] = useState(
-    initialData?.current_residence || "",
+    initialData?.current_residence ?? "",
   );
+
+  const slugify = (str: string) => {
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .replace(/([^0-9a-z-\s])/g, "")
+      .replace(/(\s+)/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
+
+  const handleSolarDeathChange = (
+    field: "day" | "month" | "year",
+    val: string,
+  ) => {
+    const num = val ? Number(val) : "";
+    let d = deathDay;
+    let m = deathMonth;
+    let y = deathYear;
+
+    if (field === "day") {
+      d = num;
+      setDeathDay(num);
+    } else if (field === "month") {
+      m = num;
+      setDeathMonth(num);
+    } else if (field === "year") {
+      y = num;
+      setDeathYear(num);
+    }
+
+    if (d !== "" && m !== "" && y !== "" && y > 100) {
+      try {
+        const solar = Solar.fromYmd(y, m, d);
+        const lunar = solar.getLunar();
+        setDeathLunarDay(lunar.getDay());
+        setDeathLunarMonth(Math.abs(lunar.getMonth()));
+        setDeathLunarYear(lunar.getYear());
+      } catch {
+        // Ignore invalid dates
+      }
+    }
+  };
+
+  const handleLunarDeathChange = (
+    field: "day" | "month" | "year",
+    val: string,
+  ) => {
+    const num = val ? Number(val) : "";
+    let d = deathLunarDay;
+    let m = deathLunarMonth;
+    let y = deathLunarYear;
+
+    if (field === "day") {
+      d = num;
+      setDeathLunarDay(num);
+    } else if (field === "month") {
+      m = num;
+      setDeathLunarMonth(num);
+    } else if (field === "year") {
+      y = num;
+      setDeathLunarYear(num);
+    }
+
+    if (d !== "" && m !== "" && y !== "" && y > 100) {
+      try {
+        const lunar = Lunar.fromYmd(y, m, d);
+        const solar = lunar.getSolar();
+        setDeathDay(solar.getDay());
+        setDeathMonth(solar.getMonth());
+        setDeathYear(solar.getYear());
+      } catch {
+        // Ignore invalid dates
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +215,66 @@ export default function MemberForm({
       return;
     }
 
-    if (isDeceased && !isValidDate(deathDay, deathMonth, deathYear)) {
+    let finalDeathDay = deathDay;
+    let finalDeathMonth = deathMonth;
+    let finalDeathYear = deathYear;
+    let finalDeathLunarDay = deathLunarDay;
+    let finalDeathLunarMonth = deathLunarMonth;
+    let finalDeathLunarYear = deathLunarYear;
+
+    if (
+      isDeceased &&
+      deathLunarDay !== "" &&
+      deathLunarMonth !== "" &&
+      deathLunarYear !== "" &&
+      (deathDay === "" || deathMonth === "" || deathYear === "")
+    ) {
+      try {
+        const lunarDate = Lunar.fromYmd(
+          deathLunarYear,
+          deathLunarMonth,
+          deathLunarDay,
+        );
+        const solarDate = lunarDate.getSolar();
+        finalDeathDay = solarDate.getDay();
+        finalDeathMonth = solarDate.getMonth();
+        finalDeathYear = solarDate.getYear();
+      } catch {
+        setError("Ngày âm lịch không hợp lệ. Vui lòng kiểm tra lại.");
+        setLoading(false);
+        return;
+      }
+    } else if (
+      isDeceased &&
+      deathDay !== "" &&
+      deathMonth !== "" &&
+      deathYear !== "" &&
+      (deathLunarDay === "" || deathLunarMonth === "" || deathLunarYear === "")
+    ) {
+      // Sync from Solar back to Lunar
+      try {
+        const solarDate = Solar.fromYmd(deathYear, deathMonth, deathDay);
+        const lunarDate = solarDate.getLunar();
+        finalDeathLunarDay = lunarDate.getDay();
+        finalDeathLunarMonth = Math.abs(lunarDate.getMonth());
+        finalDeathLunarYear = lunarDate.getYear();
+      } catch {
+        // Safe fallback if conversion fails
+      }
+    } else if (!isDeceased) {
+      // Clear all
+      finalDeathDay = "";
+      finalDeathMonth = "";
+      finalDeathYear = "";
+      finalDeathLunarDay = "";
+      finalDeathLunarMonth = "";
+      finalDeathLunarYear = "";
+    }
+
+    if (
+      isDeceased &&
+      !isValidDate(finalDeathDay, finalDeathMonth, finalDeathYear)
+    ) {
       setError("Ngày mất không hợp lệ. Vui lòng kiểm tra lại.");
       setLoading(false);
       return;
@@ -130,8 +283,8 @@ export default function MemberForm({
     if (
       isDeceased &&
       birthYear !== "" &&
-      deathYear !== "" &&
-      deathYear < birthYear
+      finalDeathYear !== "" &&
+      finalDeathYear < birthYear
     ) {
       setError("Năm mất phải lớn hơn hoặc bằng năm sinh.");
       setLoading(false);
@@ -139,17 +292,72 @@ export default function MemberForm({
     }
 
     try {
-      let finalAvatarUrl = avatarUrl;
+      let currentAvatarUrl = avatarUrl;
 
-      // 0. Handle Avatar Upload if a new file is selected
-      if (avatarFile) {
+      // Update person data helper to avoid duplication
+      const getPersonData = (url: string | null) => ({
+        full_name: fullName,
+        gender,
+        birth_year: birthYear === "" ? null : Number(birthYear),
+        birth_month: birthMonth === "" ? null : Number(birthMonth),
+        birth_day: birthDay === "" ? null : Number(birthDay),
+        death_year:
+          isDeceased && finalDeathYear !== "" ? Number(finalDeathYear) : null,
+        death_month:
+          isDeceased && finalDeathMonth !== "" ? Number(finalDeathMonth) : null,
+        death_day:
+          isDeceased && finalDeathDay !== "" ? Number(finalDeathDay) : null,
+        death_lunar_year:
+          isDeceased && finalDeathLunarYear !== ""
+            ? Number(finalDeathLunarYear)
+            : null,
+        death_lunar_month:
+          isDeceased && finalDeathLunarMonth !== ""
+            ? Number(finalDeathLunarMonth)
+            : null,
+        death_lunar_day:
+          isDeceased && finalDeathLunarDay !== ""
+            ? Number(finalDeathLunarDay)
+            : null,
+        is_deceased: isDeceased,
+        is_in_law: isInLaw,
+        birth_order: birthOrder === "" ? null : Number(birthOrder),
+        generation: generation === "" ? null : Number(generation),
+        other_names: otherNames || null,
+        avatar_url: url,
+        note: note || null,
+      });
+
+      let currentPersonId = initialData?.id;
+
+      // For a new member, we must insert first to get the ID for the avatar filename
+      if (!isEditing || !currentPersonId) {
+        const { data: newPerson, error: createError } = await supabase
+          .from("persons")
+          .insert(getPersonData(currentAvatarUrl || null))
+          .select()
+          .single();
+        if (createError) throw createError;
+        currentPersonId = newPerson.id;
+      } else {
+        // Update existing member info first
+        const { error: updateError } = await supabase
+          .from("persons")
+          .update(getPersonData(currentAvatarUrl || null))
+          .eq("id", currentPersonId);
+        if (updateError) throw updateError;
+      }
+
+      // 2. Handle Avatar Upload if a new file is selected (now we have currentPersonId)
+      if (avatarFile && currentPersonId) {
         const fileExt = avatarFile.name.split(".").pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const slugName = slugify(fullName);
+        const fileName = `${currentPersonId}_${slugName}.${fileExt}`;
         const filePath = `${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("avatars")
-          .upload(filePath, avatarFile);
+          .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
@@ -157,69 +365,52 @@ export default function MemberForm({
           data: { publicUrl },
         } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
-        finalAvatarUrl = publicUrl;
+        currentAvatarUrl = publicUrl;
+
+        // Update the person with the final avatar URL
+        const { error: updateAvatarError } = await supabase
+          .from("persons")
+          .update({ avatar_url: currentAvatarUrl })
+          .eq("id", currentPersonId);
+        if (updateAvatarError) throw updateAvatarError;
       }
 
-      // 1. Upsert public data
-      const personData = {
-        full_name: fullName,
-        gender,
-        birth_year: birthYear === "" ? null : Number(birthYear),
-        birth_month: birthMonth === "" ? null : Number(birthMonth),
-        birth_day: birthDay === "" ? null : Number(birthDay),
-        death_year: isDeceased && deathYear !== "" ? Number(deathYear) : null,
-        death_month:
-          isDeceased && deathMonth !== "" ? Number(deathMonth) : null,
-        death_day: isDeceased && deathDay !== "" ? Number(deathDay) : null,
-        is_deceased: isDeceased,
-        is_in_law: isInLaw,
-        birth_order: birthOrder === "" ? null : Number(birthOrder),
-        other_names: otherNames || null,
-        avatar_url: finalAvatarUrl || null,
-        note: note || null,
-      };
-
-      let personId = initialData?.id;
-
-      if (isEditing && personId) {
-        const { error: updateError } = await supabase
-          .from("persons")
-          .update(personData)
-          .eq("id", personId);
-        if (updateError) throw updateError;
-      } else {
-        const { data: newPerson, error: createError } = await supabase
-          .from("persons")
-          .insert(personData)
-          .select()
-          .single();
-        if (createError) throw createError;
-        personId = newPerson.id;
-      }
-
-      // 2. Upsert private data (only if admin and personId exists)
-      if (isAdmin && personId) {
-        const privateData = {
-          person_id: personId,
-          phone_number: phoneNumber || null,
-          occupation: occupation || null,
-          current_residence: currentResidence || null,
+      // 3. Upsert private data (only if admin and currentPersonId exists)
+      if (isAdmin && currentPersonId) {
+        const normalizedData = {
+          person_id: currentPersonId,
+          phone_number: phoneNumber?.trim() || null,
+          occupation: occupation?.trim() || null,
+          current_residence: currentResidence?.trim() || null,
         };
 
-        const { error: privateError } = await supabase
-          .from("person_details_private")
-          .upsert(privateData); // Upsert works for both new and existing if we use person_id as unique key
+        const hasData =
+          normalizedData.phone_number ||
+          normalizedData.occupation ||
+          normalizedData.current_residence;
 
-        if (privateError) throw privateError;
+        if (hasData) {
+          const { error } = await supabase
+            .from("person_details_private")
+            .upsert(normalizedData);
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("person_details_private")
+            .delete()
+            .eq("person_id", currentPersonId);
+
+          if (error) throw error;
+        }
       }
-
       // After save: use callback if provided, otherwise fall back to page navigation
-      if (!personId)
+      if (!currentPersonId)
         throw new Error("Không lấy được ID thành viên sau khi lưu.");
       if (onSuccess) {
-        onSuccess(personId);
+        onSuccess(currentPersonId);
       } else {
-        router.push("/dashboard/members/" + personId);
+        router.push("/dashboard/members/" + currentPersonId);
         router.refresh();
       }
     } catch (err) {
@@ -353,7 +544,26 @@ export default function MemberForm({
               className={inputClasses}
             />
             <p className="mt-1.5 text-xs text-stone-400 flex items-center gap-1">
-              <span>💡</span> Để trống nếu không rõ hoặc không có anh/chị/em
+              <span>💡</span> Để trống nếu không rõ
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+              Thuộc đời thứ
+            </label>
+            <input
+              type="number"
+              min="1"
+              placeholder="Ví dụ: 1, 2, 3..."
+              value={generation}
+              onChange={(e) =>
+                setGeneration(e.target.value ? Number(e.target.value) : "")
+              }
+              className={inputClasses}
+            />
+            <p className="mt-1.5 text-xs text-stone-400 flex items-center gap-1">
+              <span>💡</span> Để trống nếu không rõ
             </p>
           </div>
 
@@ -507,6 +717,9 @@ export default function MemberForm({
                         setDeathYear("");
                         setDeathMonth("");
                         setDeathDay("");
+                        setDeathLunarYear("");
+                        setDeathLunarMonth("");
+                        setDeathLunarDay("");
                       }
                     }}
                     className="peer sr-only"
@@ -533,7 +746,7 @@ export default function MemberForm({
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-stone-700 group-hover:text-stone-900 transition-colors">
-                  Đã qua đời
+                  Đã mất
                 </span>
               </label>
             </div>
@@ -546,47 +759,91 @@ export default function MemberForm({
                   exit={{ opacity: 0, height: 0, marginTop: 0 }}
                   className="overflow-hidden"
                 >
-                  <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-                    Ngày mất
-                  </label>
-                  <div className="grid grid-cols-3 gap-3 pt-1">
-                    <input
-                      type="number"
-                      placeholder="Ngày"
-                      min="1"
-                      max="31"
-                      value={deathDay}
-                      onChange={(e) =>
-                        setDeathDay(
-                          e.target.value ? Number(e.target.value) : "",
-                        )
-                      }
-                      className={inputClasses}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Tháng"
-                      min="1"
-                      max="12"
-                      value={deathMonth}
-                      onChange={(e) =>
-                        setDeathMonth(
-                          e.target.value ? Number(e.target.value) : "",
-                        )
-                      }
-                      className={inputClasses}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Năm"
-                      value={deathYear}
-                      onChange={(e) =>
-                        setDeathYear(
-                          e.target.value ? Number(e.target.value) : "",
-                        )
-                      }
-                      className={inputClasses}
-                    />
+                  <p className="text-[13px] text-stone-500 mb-4 italic">
+                    * Nhập Ngày Dương lịch hoặc Ngày Âm lịch. Hệ thống sẽ tự
+                    động tính toán và điền phần còn lại.
+                  </p>
+
+                  <div className="flex flex-col gap-5">
+                    {/* Lunar Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-stone-700 mb-2">
+                        Ngày mất (Âm lịch)
+                      </label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <input
+                          type="number"
+                          placeholder="Ngày"
+                          min="1"
+                          max="31"
+                          value={deathLunarDay}
+                          onChange={(e) =>
+                            handleLunarDeathChange("day", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Tháng"
+                          min="1"
+                          max="12"
+                          value={deathLunarMonth}
+                          onChange={(e) =>
+                            handleLunarDeathChange("month", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Năm"
+                          value={deathLunarYear}
+                          onChange={(e) =>
+                            handleLunarDeathChange("year", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Solar Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-stone-700 mb-2">
+                        Ngày mất (Dương lịch)
+                      </label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <input
+                          type="number"
+                          placeholder="Ngày"
+                          min="1"
+                          max="31"
+                          value={deathDay}
+                          onChange={(e) =>
+                            handleSolarDeathChange("day", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Tháng"
+                          min="1"
+                          max="12"
+                          value={deathMonth}
+                          onChange={(e) =>
+                            handleSolarDeathChange("month", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Năm"
+                          value={deathYear}
+                          onChange={(e) =>
+                            handleSolarDeathChange("year", e.target.value)
+                          }
+                          className={inputClasses}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}

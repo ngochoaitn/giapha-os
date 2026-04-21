@@ -1,6 +1,7 @@
 "use client";
 
 import { computeKinship } from "@/utils/kinshipHelpers";
+import { getAvatarBg } from "@/utils/styleHelprs";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeftRight,
@@ -12,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import DefaultAvatar from "./DefaultAvatar";
 import { FemaleIcon, MaleIcon } from "./GenderIcons";
@@ -43,12 +45,6 @@ const getGenderStyle = (gender: string) => {
   if (gender === "male") return "bg-sky-100 text-sky-600";
   if (gender === "female") return "bg-rose-100 text-rose-600";
   return "bg-stone-100 text-stone-600";
-};
-
-const getAvatarBg = (gender: string) => {
-  if (gender === "male") return "bg-linear-to-br from-sky-400 to-sky-700";
-  if (gender === "female") return "bg-linear-to-br from-rose-400 to-rose-700";
-  return "bg-linear-to-br from-stone-400 to-stone-600";
 };
 
 // ── Person selector dropdown ──────────────────────────────────────────────────
@@ -109,7 +105,7 @@ function PersonSelector({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <DefaultAvatar gender={selected.gender} />
+                <DefaultAvatar gender={selected.gender} size={40} />
               )
             ) : (
               "?"
@@ -190,7 +186,7 @@ function PersonSelector({
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <DefaultAvatar gender={p.gender} />
+                          <DefaultAvatar gender={p.gender} size={32} />
                         )}
                       </div>
                       <div
@@ -274,9 +270,34 @@ const KINSHIP_TERMS = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function KinshipFinder({ persons, relationships }: Props) {
-  const [personA, setPersonA] = useState<PersonNode | null>(null);
-  const [personB, setPersonB] = useState<PersonNode | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const p1Id = searchParams.get("p1");
+  const p2Id = searchParams.get("p2");
+
+  const personA = useMemo(
+    () => persons.find((p) => p.id === p1Id) || null,
+    [persons, p1Id],
+  );
+  const personB = useMemo(
+    () => persons.find((p) => p.id === p2Id) || null,
+    [persons, p2Id],
+  );
+
   const [showGuide, setShowGuide] = useState(false);
+
+  const updateUrl = (p1Id: string | null, p2Id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (p1Id) params.set("p1", p1Id);
+    else params.delete("p1");
+    if (p2Id) params.set("p2", p2Id);
+    else params.delete("p2");
+
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
+  };
 
   const result = useMemo(() => {
     if (!personA || !personB) return null;
@@ -284,8 +305,7 @@ export default function KinshipFinder({ persons, relationships }: Props) {
   }, [personA, personB, persons, relationships]);
 
   const swap = () => {
-    setPersonA(personB);
-    setPersonB(personA);
+    updateUrl(p2Id, p1Id);
   };
 
   return (
@@ -296,7 +316,7 @@ export default function KinshipFinder({ persons, relationships }: Props) {
           <PersonSelector
             label="Thành viên A"
             selected={personA}
-            onSelect={setPersonA}
+            onSelect={(p) => updateUrl(p.id, p2Id)}
             persons={persons}
             disabledId={personB?.id}
           />
@@ -310,7 +330,7 @@ export default function KinshipFinder({ persons, relationships }: Props) {
           <PersonSelector
             label="Thành viên B"
             selected={personB}
-            onSelect={setPersonB}
+            onSelect={(p) => updateUrl(p1Id, p.id)}
             persons={persons}
             disabledId={personA?.id}
           />

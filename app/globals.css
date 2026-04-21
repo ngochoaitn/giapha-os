@@ -50,3 +50,7 @@ select {
 .btn-secondary {
   @apply inline-flex items-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-full shadow-sm hover:shadow-md text-white bg-linear-to-r from-stone-600 to-stone-700 hover:from-stone-700 hover:to-stone-800 transition-all duration-300 hover:-translate-y-0.5 justify-center shrink-0 gap-1.5;
 }
+
+.title {
+  @apply text-2xl sm:text-3xl font-serif font-bold text-stone-800;
+}

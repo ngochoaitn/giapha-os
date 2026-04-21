@@ -1,26 +1,9 @@
 import DataImportExport from "@/components/DataImportExport";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { getProfile } from "@/utils/supabase/queries";
 import { redirect } from "next/navigation";
 
 export default async function DataManagementPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const profile = await getProfile();
 
   if (profile?.role !== "admin") {
     redirect("/dashboard");
@@ -35,9 +18,7 @@ export default async function DataManagementPage() {
       <div className="max-w-7xl mx-auto px-4 pb-8 sm:px-6 lg:px-8 w-full relative z-10">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div>
-            <h2 className="text-3xl font-serif font-bold text-stone-800 tracking-tight">
-              Sao lưu & Phục hồi
-            </h2>
+            <h1 className="title">Sao lưu & Phục hồi</h1>
             <p className="text-stone-500 mt-2 text-sm sm:text-base max-w-2xl">
               Quản lý dữ liệu an toàn. Bạn có thể tải xuống bản sao lưu để lưu
               trữ hoặc phục hồi lại dữ liệu từ file đã lưu. Tính năng này chỉ

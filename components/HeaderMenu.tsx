@@ -1,28 +1,15 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  BarChart2,
-  CalendarClock,
-  ChevronDown,
-  Database,
-  GitMerge,
-  Info,
-  Network,
-  SettingsIcon,
-  UserCircle,
-  Users,
-} from "lucide-react";
+import { BarChart2, ChevronDown, Database, GitMerge, Info, Network, UserCircle, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";
+import { useUser } from "./UserProvider";
 
-interface HeaderMenuProps {
-  isAdmin: boolean;
-  userEmail?: string;
-}
-
-export default function HeaderMenu({ isAdmin, userEmail }: HeaderMenuProps) {
+export default function HeaderMenu() {
+  const { user, isAdmin } = useUser();
+  const userEmail = user?.email;
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -74,65 +61,88 @@ export default function HeaderMenu({ isAdmin, userEmail }: HeaderMenuProps) {
             </div>
 
             <div className="py-1">
+              <Link
+                href="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                <Network className="size-4" />
+                Bảng điều khiển
+              </Link>
+
+              <Link
+                href="/dashboard/members"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                <Network className="size-4" />
+                Cây gia phả
+              </Link>
+              
+              <Link
+                href="/dashboard/kinship"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                <GitMerge className="size-4" />
+                Tra cứu danh xưng
+              </Link>
+
+              <Link
+                href="/dashboard/stats"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-purple-700 hover:bg-purple-50 transition-colors"
+              >
+                <BarChart2 className="size-4" />
+                Thống kê
+              </Link>
+
               {isAdmin && (
                 <>
+                  <div className="px-4 py-2 mt-1">
+                    <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider">
+                      Quản trị viên
+                    </p>
+                  </div>
+                  
                   <Link
                     href="/dashboard/users"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-rose-700 hover:bg-rose-50 transition-colors"
                   >
                     <Users className="size-4" />
                     Quản lý Người dùng
                   </Link>
+
                   <Link
                     href="/dashboard/lineage"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
                   >
                     <Network className="size-4" />
                     Thứ tự gia phả
                   </Link>
+
                   <Link
                     href="/dashboard/data"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-teal-700 hover:bg-teal-50 transition-colors"
                   >
                     <Database className="size-4" />
                     Sao lưu & Phục hồi
                   </Link>
                 </>
               )}
-              <Link
-                href="/dashboard/events"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-              >
-                <CalendarClock className="size-4" />
-                Sự kiện
-              </Link>
-              <Link
-                href="/dashboard/kinship"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-              >
-                <GitMerge className="size-4" />
-                Tra cứu danh xưng
-              </Link>
-              <Link
-                href="/dashboard/stats"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
-              >
-                <BarChart2 className="size-4" />
-                Thống kê gia phả
-              </Link>
+
+              <div className="h-px bg-stone-100 my-1 mx-4" />
+
               <Link
                 href="/about"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-rose-700 hover:bg-rose-50 transition-colors"
               >
                 <Info className="size-4" />
-                Giới thiệu & Liên hệ
+                Giới thiệu
               </Link>
               <Link
                 href="/dashboard/settings"
@@ -142,6 +152,7 @@ export default function HeaderMenu({ isAdmin, userEmail }: HeaderMenuProps) {
                 <SettingsIcon className="size-4" />
                 Cài đặt
               </Link>
+
               <LogoutButton />
             </div>
           </motion.div>

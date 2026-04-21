@@ -1,23 +1,15 @@
 "use client";
 
 import { Person, Relationship } from "@/types";
-import { formatDisplayDate } from "@/utils/dateHelpers";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ChevronDown,
-  ChevronRight,
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Filter,
-  Image as ImageIcon,
-  Share2,
-} from "lucide-react";
-import Image from "next/image";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { Share2 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useDashboard } from "./DashboardContext";
-import DefaultAvatar from "./DefaultAvatar";
-import ExportButton from "./ExportButton";
+import { MindmapContextData, MindmapNode } from "./MindmapNode";
+import MindmapToolbar from "./MindmapToolbar";
+
+import { buildAdjacencyLists } from "@/utils/treeHelpers";
+
+const DEFAULT_AUTO_COLLAPSE_LEVEL = 2;
 
 interface MindmapTreeProps {
   personsMap: Map<string, Person>;
@@ -344,65 +336,56 @@ export default function MindmapTree({
   roots,
   canEdit,
 }: MindmapTreeProps) {
-  const { showAvatar, setShowAvatar, setMemberModalId, levelGraph } = useDashboard();
-  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [hideSpouses, setHideSpouses] = useState(false);
+  const { showAvatar, setMemberModalId, levelGraph } = useDashboard();
+  const [hideDaughtersInLaw, setHideDaughtersInLaw] = useState(false);
+  const [hideSonsInLaw, setHideSonsInLaw] = useState(false);
+  const [hideDaughters, setHideDaughters] = useState(false);
+  const [hideSons, setHideSons] = useState(false);
   const [hideMales, setHideMales] = useState(false);
   const [hideFemales, setHideFemales] = useState(false);
+  const [hideExpandButtons, setHideExpandButtons] = useState(false);
+  const [autoCollapseLevel, setAutoCollapseLevel] = useState(
+    DEFAULT_AUTO_COLLAPSE_LEVEL,
+  );
   const [expandSignal, setExpandSignal] = useState<{
     type: "expand" | "collapse";
     ts: number;
   } | null>(null);
-  const filtersRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const node = document.getElementById("tree-toolbar-portal");
-      if (node) {
-        setPortalNode(node);
-      }
-    }, 0);
+  const ctx: MindmapContextData = useMemo(() => {
+    const adj = buildAdjacencyLists(relationships, personsMap);
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        filtersRef.current &&
-        !filtersRef.current.contains(event.target as Node)
-      ) {
-        setShowFilters(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const ctx: MindmapContextData = useMemo(
-    () => ({
+    return {
       personsMap,
       relationships,
-      hideSpouses,
+      adj,
+      hideDaughtersInLaw,
+      hideSonsInLaw,
+      hideDaughters,
+      hideSons,
       hideMales,
       hideFemales,
       showAvatar,
+      hideExpandButtons,
+      autoCollapseLevel,
       expandSignal,
       setMemberModalId,
-      maxLevel: levelGraph ?? Infinity,
-    }),
-    [
-      personsMap,
-      relationships,
-      hideSpouses,
-      hideMales,
-      hideFemales,
-      showAvatar,
-      expandSignal,
-      setMemberModalId,
-      levelGraph
-    ],
-  );
+    };
+  }, [
+    personsMap,
+    relationships,
+    hideDaughtersInLaw,
+    hideSonsInLaw,
+    hideDaughters,
+    hideSons,
+    hideMales,
+    hideFemales,
+    showAvatar,
+    hideExpandButtons,
+    autoCollapseLevel,
+    expandSignal,
+    setMemberModalId,
+  ]);
 
   if (roots.length === 0) {
     return (
@@ -419,119 +402,26 @@ export default function MindmapTree({
 
   return (
     <div className="w-full h-full relative p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-140px)] flex justify-start lg:justify-center overflow-x-auto">
-      {/* Grouped Toolbar (Expand/Collapse, Filters, Export) Portaled to Header */}
-      {portalNode &&
-        createPortal(
-          <div
-            className="flex flex-wrap justify-center items-center gap-2 w-max"
-            ref={filtersRef}
-          >
-            {/* Expand/Collapse Controls */}
-            <div className="flex items-center bg-white/80 backdrop-blur-md shadow-sm border border-stone-200/60 rounded-full overflow-hidden transition-opacity h-10">
-              <button
-                onClick={() =>
-                  setExpandSignal({ type: "collapse", ts: Date.now() })
-                }
-                className="px-3 md:px-4 h-full flex items-center gap-1.5 hover:bg-stone-100/50 text-stone-600 transition-colors font-medium"
-                title="Thu gọn tất cả"
-              >
-                <ChevronsDownUp className="size-4" />
-                <span className="hidden sm:inline text-xs sm:text-sm">
-                  Thu gọn
-                </span>
-              </button>
-              <button
-                onClick={() =>
-                  setExpandSignal({ type: "expand", ts: Date.now() })
-                }
-                className="px-3 md:px-4 h-full flex items-center gap-1.5 hover:bg-stone-100/50 text-stone-600 transition-colors font-medium border-r border-stone-200/50"
-                title="Mở rộng tất cả"
-              >
-                <ChevronsUpDown className="size-4" />
-                <span className="hidden sm:inline text-xs sm:text-sm">
-                  Mở rộng
-                </span>
-              </button>
-            </div>
-
-            {/* Filters */}
-            <div className="relative">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 h-10 rounded-full font-semibold text-sm shadow-sm border transition-all duration-300 ${
-                  showFilters
-                    ? "bg-amber-100/90 text-amber-800 border-amber-200"
-                    : "bg-white/80 text-stone-600 border-stone-200/60 hover:bg-white hover:text-stone-900 hover:shadow-md backdrop-blur-md"
-                }`}
-              >
-                <Filter className="size-4" />
-                <span className="hidden sm:inline">Lọc hiển thị</span>
-              </button>
-
-              <AnimatePresence>
-                {showFilters && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-xl shadow-xl border border-stone-200/60 rounded-2xl p-4 flex flex-col gap-3 z-50"
-                  >
-                    <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">
-                      HIỂN THỊ
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer hover:text-stone-900 transition-colors select-none">
-                      <input
-                        type="checkbox"
-                        checked={!showAvatar}
-                        onChange={(e) => setShowAvatar(!e.target.checked)}
-                        className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer size-4"
-                      />
-                      <ImageIcon className="size-4 text-stone-400" /> Ẩn ảnh đại
-                      diện
-                    </label>
-
-                    <div className="h-px w-full bg-stone-100 my-1 font-bold text-stone-400 uppercase tracking-wider flex items-center gap-2"></div>
-                    <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">
-                      LỌC DỮ LIỆU
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer hover:text-stone-900 transition-colors select-none">
-                      <input
-                        type="checkbox"
-                        checked={hideSpouses}
-                        onChange={(e) => setHideSpouses(e.target.checked)}
-                        className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer size-4"
-                      />
-                      Ẩn dâu/rể
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer hover:text-stone-900 transition-colors select-none">
-                      <input
-                        type="checkbox"
-                        checked={hideMales}
-                        onChange={(e) => setHideMales(e.target.checked)}
-                        className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer size-4"
-                      />
-                      Ẩn nam
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer hover:text-stone-900 transition-colors select-none">
-                      <input
-                        type="checkbox"
-                        checked={hideFemales}
-                        onChange={(e) => setHideFemales(e.target.checked)}
-                        className="rounded text-amber-600 focus:ring-amber-500 cursor-pointer size-4"
-                      />
-                      Ẩn nữ
-                    </label>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Export Button */}
-            {canEdit && <ExportButton />}
-          </div>,
-          portalNode,
-        )}
+      <MindmapToolbar
+        hideDaughtersInLaw={hideDaughtersInLaw}
+        setHideDaughtersInLaw={setHideDaughtersInLaw}
+        hideSonsInLaw={hideSonsInLaw}
+        setHideSonsInLaw={setHideSonsInLaw}
+        hideDaughters={hideDaughters}
+        setHideDaughters={setHideDaughters}
+        hideSons={hideSons}
+        setHideSons={setHideSons}
+        hideMales={hideMales}
+        setHideMales={setHideMales}
+        hideFemales={hideFemales}
+        setHideFemales={setHideFemales}
+        hideExpandButtons={hideExpandButtons}
+        setHideExpandButtons={setHideExpandButtons}
+        autoCollapseLevel={autoCollapseLevel}
+        setAutoCollapseLevel={setAutoCollapseLevel}
+        setExpandSignal={setExpandSignal}
+        canEdit={canEdit}
+      />
 
       {/* Root Container */}
       <div
