@@ -35,10 +35,6 @@ export function DashboardProvider({
   initialShowAvatar?: boolean;
 }) {
   const searchParams = useSearchParams();
-  const [memberModalId, setMemberModalId] = useState<string | null>(null);
-  const [showAvatar, setShowAvatar] = useState<boolean>(true);
-  const [view, setViewState] = useState<ViewMode>("list");
-  const [rootId, setRootIdState] = useState<string | null>(null);
   const [levelGraph, setLevelGraphState] = useState<number | null>(Infinity);
 
   // Initialize state directly from URL to avoid flash of wrong view

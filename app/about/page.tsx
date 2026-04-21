@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { motion } from "framer-motion";
-import { ArrowLeft, Info, Mail, ShieldAlert, User2Icon } from "lucide-react";
+import { ArrowLeft, Info, Mail, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 

@@ -45,7 +45,7 @@ export default function FamilyTree({
     DEFAULT_AUTO_COLLAPSE_LEVEL,
   );
 
-  const { showAvatar } = useDashboard();
+  const { showAvatar, levelGraph } = useDashboard();
 
   const {
     scale,

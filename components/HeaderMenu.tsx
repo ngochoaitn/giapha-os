@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart2, ChevronDown, Database, GitMerge, Info, Network, UserCircle, Users } from "lucide-react";
+import { BarChart2, ChevronDown, Database, GitMerge, Info, Network, UserCircle, Users, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";

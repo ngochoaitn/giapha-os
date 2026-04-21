@@ -5,7 +5,6 @@ import DashboardMemberList from "@/components/DashboardMemberList";
 import RootSelector from "@/components/RootSelector";
 import { Person, Relationship } from "@/types";
 import { useMemo } from "react";
-import LevelGraphSelector from "./LevelGraphSelector";
 import dynamic from "next/dynamic";
 
 const FamilyTree = dynamic(() => import("@/components/FamilyTree"));
@@ -95,7 +94,6 @@ export default function DashboardViews({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 w-full flex flex-col sm:flex-row flex-wrap items-center sm:justify-between gap-4 relative z-20">
             <div className="flex flex-row items-stretch sm:items-center gap-2">
               <RootSelector persons={persons} currentRootId={activeRootId} />
-              <LevelGraphSelector />
             </div>
             <div
               id="tree-toolbar-portal"
