@@ -19,8 +19,8 @@ services:
       - web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.giapha_web.rule=Host(`${DOCKER_TRAEFIK_DOMAIN}`)"
-      - "traefik.http.routers.giapha_web.entrypoints=web"
+      - "traefik.http.routers.${DOCKER_TRAEFIK_ROUTER_NAME}.rule=Host(`${DOCKER_TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.${DOCKER_TRAEFIK_ROUTER_NAME}.entrypoints=web"
 networks:
   web:
     external: true
