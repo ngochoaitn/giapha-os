@@ -1,18 +1,35 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { List, ListTree, Network } from "lucide-react";
+import { Circle, List, ListTree, Network } from "lucide-react";
 import { useDashboard } from "./DashboardContext";
 
-export type ViewMode = "list" | "tree" | "mindmap";
+export type ViewMode = "list" | "tree" | "mindmap" | "bubble";
 
 export default function ViewToggle() {
   const { view: currentView, setView } = useDashboard();
 
   const tabs = [
-    { id: "list", label: "Danh sách", icon: <List className="size-4" /> },
-    { id: "tree", label: "Sơ đồ cây", icon: <Network className="size-4" /> },
-    { id: "mindmap", label: "Mindmap", icon: <ListTree className="size-4" /> },
+    {
+      id: "list",
+      label: "Danh sách",
+      icon: <List className="size-6 sm:size-4" />,
+    },
+    {
+      id: "tree",
+      label: "Sơ đồ cây",
+      icon: <Network className="size-6 sm:size-4" />,
+    },
+    {
+      id: "mindmap",
+      label: "Mindmap",
+      icon: <ListTree className="size-6 sm:size-4" />,
+    },
+    {
+      id: "bubble",
+      label: "Bong bóng",
+      icon: <Circle className="size-6 sm:size-4" />,
+    },
   ] as const;
 
   return (
@@ -41,7 +58,7 @@ export default function ViewToggle() {
             >
               {tab.icon}
             </span>
-            <span className="tracking-wide">{tab.label}</span>
+            <span className="hidden sm:block tracking-wide">{tab.label}</span>
           </button>
         );
       })}

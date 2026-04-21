@@ -1,33 +1,17 @@
 import AdminUserList from "@/components/AdminUserList";
 import { AdminUserData } from "@/types";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { getProfile, getSupabase } from "@/utils/supabase/queries";
 import { redirect } from "next/navigation";
 
 export default async function AdminUsersPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
+  const profile = await getProfile();
   const isAdmin = profile?.role === "admin";
 
   if (!isAdmin) {
     redirect("/dashboard");
   }
+
+  const supabase = await getSupabase();
 
   // Fetch users via RPC
   const { data: users, error } = await supabase.rpc("get_admin_users");
@@ -47,15 +31,13 @@ export default async function AdminUsersPage() {
       <div className="max-w-7xl mx-auto px-4 pb-8 sm:px-6 lg:px-8 w-full relative z-10">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center">
           <div>
-            <h2 className="text-3xl font-serif font-bold text-stone-800 tracking-tight">
-              Quản lý Người dùng
-            </h2>
+            <h1 className="title">Quản lý Người dùng</h1>
             <p className="text-stone-500 mt-2 text-sm sm:text-base">
               Danh sách các tài khoản đang tham gia vào hệ thống.
             </p>
           </div>
         </div>
-        <AdminUserList initialUsers={typedUsers} currentUserId={user.id} />
+        <AdminUserList initialUsers={typedUsers} currentUserId={profile.id} />
       </div>
     </main>
   );

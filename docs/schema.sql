@@ -66,6 +66,9 @@ CREATE TABLE IF NOT EXISTS public.persons (
   death_year INT,
   death_month INT,
   death_day INT,
+  death_lunar_year INT,
+  death_lunar_month INT,
+  death_lunar_day INT,
   
   is_deceased BOOLEAN NOT NULL DEFAULT FALSE,
   is_in_law BOOLEAN NOT NULL DEFAULT FALSE,
@@ -171,6 +174,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Helper function to check if user is editor
+CREATE OR REPLACE FUNCTION PUBLIC.IS_EDITOR()
+RETURNS BOOLEAN
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET SEARCH_PATH = PUBLIC
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'editor'
+  );
+END;
+$$;
+revoke all on function public.is_editor() from public;
+grant execute on function public.is_editor() to authenticated;
+
 -- PROFILES POLICIES
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -187,9 +207,9 @@ DROP POLICY IF EXISTS "Admins can insert persons" ON public.persons;
 DROP POLICY IF EXISTS "Admins can update persons" ON public.persons;
 DROP POLICY IF EXISTS "Admins can delete persons" ON public.persons;
 
-CREATE POLICY "Admins can insert persons" ON public.persons FOR INSERT TO authenticated WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update persons" ON public.persons FOR UPDATE TO authenticated USING (public.is_admin());
-CREATE POLICY "Admins can delete persons" ON public.persons FOR DELETE TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins and Editors can insert persons" ON public.persons FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR public.is_editor());
+CREATE POLICY "Admins and Editors can update persons" ON public.persons FOR UPDATE TO authenticated USING (public.is_admin() OR public.is_editor()) WITH CHECK (public.is_admin() OR public.is_editor());
+CREATE POLICY "Admins and Editors can delete persons" ON public.persons FOR DELETE TO authenticated USING (public.is_admin() OR public.is_editor());
 
 -- PERSON_DETAILS_PRIVATE POLICIES
 DROP POLICY IF EXISTS "Admins can view private details" ON public.person_details_private;
@@ -207,9 +227,9 @@ DROP POLICY IF EXISTS "Admins can insert relationships" ON public.relationships;
 DROP POLICY IF EXISTS "Admins can update relationships" ON public.relationships;
 DROP POLICY IF EXISTS "Admins can delete relationships" ON public.relationships;
 
-CREATE POLICY "Admins can insert relationships" ON public.relationships FOR INSERT TO authenticated WITH CHECK (public.is_admin());
-CREATE POLICY "Admins can update relationships" ON public.relationships FOR UPDATE TO authenticated USING (public.is_admin());
-CREATE POLICY "Admins can delete relationships" ON public.relationships FOR DELETE TO authenticated USING (public.is_admin());
+CREATE POLICY "Admins and Editors can insert relationships" ON public.relationships FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR public.is_editor());
+CREATE POLICY "Admins and Editors can update relationships" ON public.relationships FOR UPDATE TO authenticated USING (public.is_admin() OR public.is_editor()) WITH CHECK (public.is_admin() OR public.is_editor());
+CREATE POLICY "Admins and Editors can delete relationships" ON public.relationships FOR DELETE TO authenticated USING (public.is_admin() OR public.is_editor());
 
 -- SETTINGS POLICIES
 DROP POLICY IF EXISTS "Allow public read settings" ON public.settings;

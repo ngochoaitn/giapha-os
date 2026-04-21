@@ -1,26 +1,10 @@
 import MemberForm from "@/components/MemberForm";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { getProfile } from "@/utils/supabase/queries";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default async function NewMemberPage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Check if user is admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const profile = await getProfile();
 
   const isAdmin = profile?.role === "admin";
   const canEdit = profile?.role === "admin" || profile?.role === "editor";
@@ -48,15 +32,22 @@ export default async function NewMemberPage() {
       {/* <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-stone-200/40 rounded-full blur-[100px] pointer-events-none" /> */}
 
       <div className="w-full relative z-20 py-4 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-800">
-          Thêm Thành Viên Mới
-        </h1>
-        <a
-          href="/dashboard"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/members"
+            className="p-2 -ml-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-full transition-colors"
+            title="Quay lại danh sách"
+          >
+            <ArrowLeft className="size-5" />
+          </Link>
+          <h1 className="title">Thêm Thành Viên Mới</h1>
+        </div>
+        <Link
+          href="/dashboard/members"
           className="px-4 py-2 bg-stone-100/80 text-stone-700 rounded-lg hover:bg-stone-200 hover:text-stone-900 font-medium text-sm transition-all shadow-sm"
         >
           Hủy
-        </a>
+        </Link>
       </div>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 relative z-10 w-full flex-1">

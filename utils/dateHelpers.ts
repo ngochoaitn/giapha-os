@@ -1,4 +1,4 @@
-import { Solar } from "lunar-javascript";
+import { Lunar, Solar } from "lunar-javascript";
 
 export function formatDisplayDate(
   year: number | null,
@@ -43,20 +43,87 @@ export function getLunarDateString(
   }
 }
 
+export function getSolarDateString(
+  year: number | null,
+  month: number | null,
+  day: number | null,
+): string | null {
+  if (!year || !month || !day) return "Chưa rõ";
+
+  try {
+    const lunar = Lunar.fromYmd(
+      year,
+      parseInt(month.toString()),
+      parseInt(day.toString()),
+    );
+    const solar = lunar.getSolar();
+
+    const sDay = solar.getDay().toString().padStart(2, "0");
+    const sMonthRaw = solar.getMonth();
+    const sMonth = Math.abs(sMonthRaw).toString().padStart(2, "0");
+    const sYear = solar.getYear();
+
+    return `${sDay}/${sMonth}/${sYear}`;
+  } catch (error) {
+    console.error("Solar conversion error:", error);
+    return null;
+  }
+}
+
 export function calculateAge(
   birthYear: number | null,
+  birthMonth: number | null,
+  birthDay: number | null,
   deathYear: number | null,
+  deathMonth: number | null,
+  deathDay: number | null,
+  isDeceased: boolean = false,
 ): { age: number; isDeceased: boolean } | null {
   if (!birthYear) return null;
 
-  if (deathYear) {
-    return { age: deathYear - birthYear, isDeceased: true };
+  if (isDeceased || deathYear) {
+    if (deathYear) {
+      let age = deathYear - birthYear;
+      if (birthMonth && birthDay && deathMonth && deathDay) {
+        if (
+          deathMonth < birthMonth ||
+          (deathMonth === birthMonth && deathDay < birthDay)
+        ) {
+          age--;
+        }
+      }
+      return { age, isDeceased: true };
+    }
+    return null;
   }
 
-  return { age: new Date().getFullYear() - birthYear, isDeceased: false };
+  const now = new Date();
+  const vnTimeStr = now.toLocaleString("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
+  const vnDate = new Date(vnTimeStr);
+  const currentYear = vnDate.getFullYear();
+
+  let age = currentYear - birthYear;
+
+  if (birthMonth && birthDay) {
+    const currentMonth = vnDate.getMonth() + 1;
+    const currentDay = vnDate.getDate();
+    if (
+      currentMonth < birthMonth ||
+      (currentMonth === birthMonth && currentDay < birthDay)
+    ) {
+      age--;
+    }
+  }
+
+  return { age, isDeceased: false };
 }
 
-export function getZodiacSign(day: number | null, month: number | null): string | null {
+export function getZodiacSign(
+  day: number | null,
+  month: number | null,
+): string | null {
   if (!day || !month) return null;
   const d = day;
   const m = month;
@@ -77,22 +144,111 @@ export function getZodiacSign(day: number | null, month: number | null): string 
   return null;
 }
 
-export function getZodiacAnimal(year: number | null, month: number | null = null, day: number | null = null): string | null {
+export function getZodiacAnimal(
+  year: number | null,
+  month: number | null = null,
+  day: number | null = null,
+): string | null {
   if (!year) return null;
   const animals = [
-    "Thân", "Dậu", "Tuất", "Hợi", "Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi"
+    "Thân",
+    "Dậu",
+    "Tuất",
+    "Hợi",
+    "Tý",
+    "Sửu",
+    "Dần",
+    "Mão",
+    "Thìn",
+    "Tỵ",
+    "Ngọ",
+    "Mùi",
   ];
-  
+
   let targetYear = year;
-  
+
   if (month && day) {
     try {
-      const solar = Solar.fromYmd(year, parseInt(month.toString()), parseInt(day.toString()));
+      const solar = Solar.fromYmd(
+        year,
+        parseInt(month.toString()),
+        parseInt(day.toString()),
+      );
       targetYear = solar.getLunar().getYear();
     } catch (error) {
       console.error("Lunar conversion error in zodiac:", error);
     }
   }
-  
+
   return animals[targetYear % 12];
+}
+
+/* ── Thiên Can & Địa Chi (Vietnamese Can Chi) ─────────────────────── */
+const THIEN_CAN: Record<string, string> = {
+  甲: "Giáp",
+  乙: "Ất",
+  丙: "Bính",
+  丁: "Đinh",
+  戊: "Mậu",
+  己: "Kỷ",
+  庚: "Canh",
+  辛: "Tân",
+  壬: "Nhâm",
+  癸: "Quý",
+};
+
+const DIA_CHI: Record<string, string> = {
+  子: "Tý",
+  丑: "Sửu",
+  寅: "Dần",
+  卯: "Mão",
+  辰: "Thìn",
+  巳: "Tỵ",
+  午: "Ngọ",
+  未: "Mùi",
+  申: "Thân",
+  酉: "Dậu",
+  戌: "Tuất",
+  亥: "Hợi",
+};
+
+/**
+ * Convert a Chinese Gan-Zhi string (e.g. "丙午") to Vietnamese (e.g. "Bính Ngọ").
+ */
+function ganZhiToVietnamese(ganZhi: string): string {
+  if (!ganZhi || ganZhi.length < 2) return ganZhi;
+  const can = THIEN_CAN[ganZhi[0]] ?? ganZhi[0];
+  const chi = DIA_CHI[ganZhi[1]] ?? ganZhi[1];
+  return `${can} ${chi}`;
+}
+
+/**
+ * Get today's solar and lunar date info for display.
+ */
+export function getTodayLunar() {
+  const now = new Date();
+  const vnTimeStr = now.toLocaleString("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
+  const vnDate = new Date(vnTimeStr);
+
+  const solar = Solar.fromYmd(
+    vnDate.getFullYear(),
+    vnDate.getMonth() + 1,
+    vnDate.getDate(),
+  );
+  const lunar = solar.getLunar();
+
+  return {
+    solarStr: vnDate.toLocaleDateString("vi-VN", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    }),
+    lunarDay: lunar.getDay(),
+    lunarMonth: Math.abs(lunar.getMonth()),
+    lunarYear: ganZhiToVietnamese(lunar.getYearInGanZhi()),
+    lunarDayStr: `${lunar.getDay()} tháng ${Math.abs(lunar.getMonth())}`,
+  };
 }
